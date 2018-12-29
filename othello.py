@@ -50,7 +50,7 @@ class Application:
         self.window.config(menu=self.menu)
 
     def create_game_menu(self):
-        gameMenu = Menu(self.menu,tearoff=0)  # The menu will not have a tear-off feature,
+        gameMenu = Menu(self.menu, tearoff=0)  # The menu will not have a tear-off feature,
         # and choices will be added starting at position 0. i.e. Creates New & Quit in another menu.
         self.menu.add_cascade(label="Game", menu=gameMenu, underline=1)  # To attach the parent menu
         gameMenu.add_command(label="New", command=self.create_game, underline=1)
@@ -61,6 +61,7 @@ class Application:
         settingsMenu = Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label="Settings", menu=settingsMenu, underline=0)
 
+        # Checkbox for showing valid positions
         settingsMenu.add_checkbutton(label="Show valid positions", variable=self.show_valid_positions,
                                  command=self.toggle_show_valid_positions,
                                  underline=0)
@@ -71,6 +72,7 @@ class Application:
         mode = Menu(settingsMenu, tearoff=0)
         heuristic = Menu(settingsMenu, tearoff=0)
         difficulty = Menu(settingsMenu, tearoff=0)
+
 
         settingsMenu.add_cascade(label="First Player", menu=first_player, underline=0)
         first_player.add_radiobutton(label="Black", variable=self.color_first_player,
@@ -221,9 +223,6 @@ class Application:
             self.update_status(message)
             self.update_board()
 
-    def show_credits(self):
-        message = "MonOthello\nv.: 1.0"
-        messagebox.showinfo(title="About", message=message)
 
     def go(self, position):
         if not self.game:
