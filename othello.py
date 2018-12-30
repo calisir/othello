@@ -1,22 +1,17 @@
 from tkinter import *
-# import tkMessageBox
 from tkinter import messagebox
 
-from game import *
+import random
+
 import minimax
 
-
 class Application:
-    """GUI of the game."""
-
     def __init__(self):
-        """Initialize the window and the GUI elements."""
-
         # Initialize the windows
         self.window = Tk()
         self.window.title("Othello game")
-        self.window.wm_maxsize(width="460", height="540")
-        self.window.wm_minsize(width="460", height="540")
+        self.window.wm_maxsize(width="490", height="540")
+        self.window.wm_minsize(width="490", height="540")
 
         # Initialize
         self.game = False
@@ -46,7 +41,6 @@ class Application:
     def create_menu(self):
         self.menu = Menu(self.window)
         self.create_game_menu()
-        self.create_settings_menu()
         self.window.config(menu=self.menu)
 
     def create_game_menu(self):
@@ -55,26 +49,15 @@ class Application:
         self.menu.add_cascade(label="Game", menu=gameMenu, underline=1)  # To attach the parent menu
         gameMenu.add_command(label="New", command=self.create_game, underline=1)
         gameMenu.add_separator()  # Adds a separator line
-        gameMenu.add_command(label="Quit Game", command=self.quitGame, underline=1)
-
-    def create_settings_menu(self):
-        settingsMenu = Menu(self.menu, tearoff=0)
-        self.menu.add_cascade(label="Settings", menu=settingsMenu, underline=0)
-
         # Checkbox for showing valid positions
-        settingsMenu.add_checkbutton(label="Show valid positions", variable=self.show_valid_positions,
-                                 command=self.toggle_show_valid_positions,
-                                 underline=0)
+        gameMenu.add_checkbutton(label="Show valid positions to play", variable=self.show_valid_positions,
+                                     command=self.toggle_show_valid_positions,
+                                     underline=0)
 
-        settingsMenu.add_separator()
+        gameMenu.add_separator()  # Adds a separator line
+        first_player = Menu(gameMenu, tearoff=0)
 
-        first_player = Menu(settingsMenu, tearoff=0)
-        mode = Menu(settingsMenu, tearoff=0)
-        heuristic = Menu(settingsMenu, tearoff=0)
-        difficulty = Menu(settingsMenu, tearoff=0)
-
-
-        settingsMenu.add_cascade(label="First Player", menu=first_player, underline=0)
+        gameMenu.add_cascade(label="Choose First Player", menu=first_player, underline=0)
         first_player.add_radiobutton(label="Black", variable=self.color_first_player,
                                      command=lambda: self.set_first_player("B"),
                                      underline=0)
@@ -82,7 +65,11 @@ class Application:
                                      command=lambda: self.set_first_player("W"),
                                      underline=0)
 
-        settingsMenu.add_cascade(label="Mode", menu=mode, underline=0)
+        first_player.invoke(first_player.index("Black")) # Default it is Black
+
+        gameMenu.add_separator()  # Adds a separator line
+        mode = Menu(gameMenu, tearoff=0)
+        gameMenu.add_cascade(label="Mode", menu=mode, underline=0)
         mode.add_radiobutton(label="Human vs Human", variable=self.mode,
                              command=lambda: self.set_mode(0), underline=0)
         mode.add_radiobutton(label="Human vs Computer", variable=self.mode,
@@ -90,28 +77,24 @@ class Application:
         mode.add_radiobutton(label="Computer vs Human", variable=self.mode,
                              command=lambda: self.set_mode(2), underline=12)
 
-        settingsMenu.add_cascade(label="Heuristic", menu=heuristic, underline=0)
-        heuristic.add_radiobutton(label="Baby", variable=self.heuristic, underline=0,
-                                  command=lambda: self.set_heuristic(minimax.baby),
-                                  value=0)
+        mode.invoke(mode.index("Human vs Computer")) # Default it is choose to Human versus Computer
 
-        heuristic.add_radiobutton(label="Weak", variable=self.heuristic, underline=0,
-                                  command=lambda: self.set_heuristic(minimax.weak),
-                                  value=1)
-
+        gameMenu.add_separator()  # Adds a separator line
+        heuristic = Menu(gameMenu, tearoff=0)
+        gameMenu.add_cascade(label="Heuristic", menu=heuristic, underline=0)
         heuristic.add_radiobutton(label="Greedy", variable=self.heuristic, underline=0,
                                   command=lambda: self.set_heuristic(minimax.greedy),
-                                  value=2)
+                                  value=0)
 
-        heuristic.add_radiobutton(label="Posicional", variable=self.heuristic, underline=0,
-                                  command=lambda: self.set_heuristic(minimax.posicional),
-                                  value=3)
+        heuristic.add_radiobutton(label="Coin-Parity", variable=self.heuristic, underline=0,
+                                  command=lambda: self.set_heuristic(minimax.coin_parity),
+                                  value=1)
 
-        heuristic.add_radiobutton(label="Marc Mandt Posicional", variable=self.heuristic, underline=0,
-                                  command=lambda: self.set_heuristic(minimax.marc_mandt_posicional),
-                                  value=4)
+        heuristic.invoke(heuristic.index("Greedy"))  # Default it is chosen as Greedy
 
-        settingsMenu.add_cascade(label="Difficulty", menu=difficulty, underline=0)
+        gameMenu.add_separator()  # Adds a separator line
+        difficulty = Menu(gameMenu, tearoff=0)
+        gameMenu.add_cascade(label="Difficulty", menu=difficulty, underline=0)
         difficulty.add_radiobutton(label="Depth 1",
                                    variable=self.difficulty,
                                    command=lambda: self.set_difficulty(1),
@@ -129,11 +112,10 @@ class Application:
                                    command=lambda: self.set_difficulty(4),
                                    underline=6)
 
-        # set the default values
-        first_player.invoke(first_player.index("Black"))
-        mode.invoke(mode.index("Human vs Computer"))
-        difficulty.invoke(difficulty.index(1))
-        heuristic.invoke(heuristic.index("Weak"))
+        difficulty.invoke(difficulty.index(1))  # Default it is chosen as 1
+
+        gameMenu.add_separator()  # Adds a separator line
+        gameMenu.add_command(label="Quit Game", command=self.quitGame, underline=1)
 
     def set_mode(self, m):
         self.mode = m
@@ -344,6 +326,212 @@ class Application:
         if messagebox.askyesno(title="Quit", message="Really quit?"):
             quit()
 
+
+class Game:
+
+    def __init__(self, p1_color="W", p1_mode="H", p2_mode="C"):
+        if p1_color == "W":
+            p2_color = "B"
+        else:
+            p2_color = "W"
+        self.board = Board()
+        self.player1 = Player(color=p1_color, mode=p1_mode)
+        self.player2 = Player(color=p2_color, mode=p2_mode)
+        self.turn = self.player1
+
+    def start(self):
+        self.board[(3, 3)] = self.board[(4, 4)] = "B"
+        self.board[(3, 4)] = self.board[(4, 3)] = "W"
+        self.update_scores()
+
+    def play(self, position):
+        if is_valid_position(self.board, position, self.turn.color):
+            move(self.board, position, self.turn.color)
+            self.update_scores()
+            self.change_turn()
+            return True
+        else:
+            return False
+
+    def update_scores(self):
+        self.player1.score = count_pieces(self.board, self.player1.color)
+        self.player2.score = count_pieces(self.board, self.player2.color)
+
+    def change_turn(self):
+        if self.turn == self.player1:
+            self.turn = self.player2
+        else:
+            self.turn = self.player1
+
+    def winning_side(self, formatted=True):
+        self.update_scores()
+        if self.player1.score > self.player2.score:
+            winning = self.player1.color
+            if not formatted: return winning
+        elif self.player1.score < self.player2.score:
+            winning = self.player2.color
+            if not formatted: return winning
+        else:
+            if not formatted: return None
+            return "Tie."
+        if winning == "W":
+            return "White win!"
+        else:
+            return "Black win!"
+
+    def test_end(self):
+        return end_game(self.board)
+
+    def __str__(self):
+        string = "----------------------\n"
+        string += "GAME\n"
+        string += "-------\n"
+        string += "Turn: %s\n" % self.turn.color
+        string += "-------\n"
+        string += self.player1.__str__()
+        string += "-------\n"
+        string += self.player2.__str__()
+        string += "-------\n"
+        string += "Board:\n"
+        string += self.board.__str__()
+        string += "----------------------\n"
+        return string
+
+
+
+class Board(dict):
+    def __init__(self):
+        for i in range(8):
+            for j in range(8):
+                self[(i, j)] = "E"
+
+    def __str__(self):
+        string = ""
+        for i in range(8):
+            a = ""
+            for j in range(8):
+                if self[(i, j)] == "E":
+                    a += '-'
+                else:
+                    a += self[(i, j)]
+            string += a + '\n'
+        return string
+
+
+class Player():
+    def __init__(self, color, mode):
+        self.color = color
+        self.mode = mode
+        self.score = 0
+
+    def __str__(self):
+        string = "Player:\n"
+        string += "Color: %s\n" % self.color
+        string += "Mode: %s\n" % self.mode
+        string += "Score: %s\n" % self.score
+        return string
+
+
+directions = [(1, 0), (0, 1), (-1, 0), (0, -1),
+              (1, 1), (1, -1), (-1, 1), (-1, -1)]
+
+
+def count_pieces(board, color):
+    """Count the pieces in the board of the given color."""
+    sum = 0
+    for i in range(8):
+        for j in range(8):
+            if board[(i, j)] == color:
+                sum += 1
+    return sum
+
+
+def has_valid_position(board, turn):
+    """Return if the turn has any valid position."""
+    for i in range(8):
+        for j in range(8):
+            position = (i, j)
+            if is_valid_position(board, position, turn):
+                return True
+    return False
+
+
+def valid_positions(board, turn):
+    """Return a set with all valid positions for the given turn."""
+    valid = list()
+    for i in range(8):
+        for j in range(8):
+            position = (i, j)
+            if is_valid_position(board, position, turn):
+                valid.append(position)
+
+    return set(valid)
+
+
+def end_game(board):
+    """Return a bool.
+    Check the end of the game.
+
+    """
+    return not has_valid_position(board, "W") and not \
+        has_valid_position(board, "B")
+
+
+def is_valid_position(board, position, turn):
+    """Return a bool.
+    Check if the given position is valid for this turn.
+
+    """
+    if board[position] != "E":
+        return False
+    for direction in directions:
+        between = 0
+        i, j = position
+        while True:
+            try:
+                i += direction[0]
+                j += direction[1]
+                if board[(i, j)] == "E":
+                    break
+                if board[(i, j)] != turn:
+                    between += 1
+                elif between > 0:
+                    return True
+                else:
+                    break
+            except KeyError:
+                break
+    return False
+
+
+def move(board, position, turn):
+    """Move to the given position a piece of the color of the turn."""
+
+    to_change = []
+    for direction in directions:
+        between = 0
+        i, j = position
+        while True:
+            try:
+                i += direction[0]
+                j += direction[1]
+                if board[(i, j)] == "E":
+                    break
+                if board[(i, j)] != turn:
+                    between += 1
+                elif between > 0:
+                    x, y = position
+                    for times in range(between + 1):
+                        to_change.append((x, y))
+                        x += direction[0]
+                        y += direction[1]
+                    break
+                else:
+                    break
+            except KeyError:
+                break
+    for item in to_change:
+        board[item] = turn
 
 if __name__ == "__main__":
     app = Application()
