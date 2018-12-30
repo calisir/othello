@@ -5,6 +5,10 @@ import random
 
 import minimax
 
+MAX = 9999
+MIN = -9999
+
+
 class Application:
     def __init__(self):
         # Initialize the windows
@@ -16,9 +20,9 @@ class Application:
         # Initialize
         self.game = False
         self.show_valid_positions = 0  # Shows the valid positions that user can take.
-        self.difficulty = 1
-        self.mode = 2
-        self.color_first_player = 3
+        self.depth = 2
+        self.playing_against = 2
+        self.color_first_player = "B"  # Always Black starts first
         self.heuristic = 4
 
         self.create_elements()
@@ -55,29 +59,17 @@ class Application:
                                      underline=0)
 
         gameMenu.add_separator()  # Adds a separator line
-        first_player = Menu(gameMenu, tearoff=0)
+        playing_against = Menu(gameMenu, tearoff=0)
+        gameMenu.add_cascade(label="Playing Against", menu=playing_against, underline=0)
+        playing_against.add_radiobutton(label="Human vs Human", variable=self.playing_against,
+                             command=lambda: self.set_playing_against(0), underline=0)
+        playing_against.add_radiobutton(label="Human vs Computer", variable=self.playing_against,
+                             command=lambda: self.set_playing_against(1), underline=1)
+        playing_against.add_radiobutton(label="Computer vs Computer", variable=self.playing_against,
+                             command=lambda: self.set_playing_against(2), underline=12)
 
-        gameMenu.add_cascade(label="Choose First Player", menu=first_player, underline=0)
-        first_player.add_radiobutton(label="Black", variable=self.color_first_player,
-                                     command=lambda: self.set_first_player("B"),
-                                     underline=0)
-        first_player.add_radiobutton(label="White", variable=self.color_first_player,
-                                     command=lambda: self.set_first_player("W"),
-                                     underline=0)
-
-        first_player.invoke(first_player.index("Black")) # Default it is Black
-
-        gameMenu.add_separator()  # Adds a separator line
-        mode = Menu(gameMenu, tearoff=0)
-        gameMenu.add_cascade(label="Mode", menu=mode, underline=0)
-        mode.add_radiobutton(label="Human vs Human", variable=self.mode,
-                             command=lambda: self.set_mode(0), underline=0)
-        mode.add_radiobutton(label="Human vs Computer", variable=self.mode,
-                             command=lambda: self.set_mode(1), underline=1)
-        mode.add_radiobutton(label="Computer vs Human", variable=self.mode,
-                             command=lambda: self.set_mode(2), underline=12)
-
-        mode.invoke(mode.index("Human vs Computer")) # Default it is choose to Human versus Computer
+        playing_against.invoke(playing_against.index("Human vs Computer"))
+        # Default it is choose to Human versus Computer
 
         gameMenu.add_separator()  # Adds a separator line
         heuristic = Menu(gameMenu, tearoff=0)
@@ -93,44 +85,17 @@ class Application:
         heuristic.invoke(heuristic.index("Greedy"))  # Default it is chosen as Greedy
 
         gameMenu.add_separator()  # Adds a separator line
-        difficulty = Menu(gameMenu, tearoff=0)
-        gameMenu.add_cascade(label="Difficulty", menu=difficulty, underline=0)
-        difficulty.add_radiobutton(label="Depth 1",
-                                   variable=self.difficulty,
-                                   command=lambda: self.set_difficulty(1),
-                                   underline=6)
-        difficulty.add_radiobutton(label="Depth 2",
-                                   variable=self.difficulty,
-                                   command=lambda: self.set_difficulty(2),
-                                   underline=6)
-        difficulty.add_radiobutton(label="Depth 3",
-                                   variable=self.difficulty,
-                                   command=lambda: self.set_difficulty(3),
-                                   underline=6)
-        difficulty.add_radiobutton(label="Depth 4",
-                                   variable=self.difficulty,
-                                   command=lambda: self.set_difficulty(4),
-                                   underline=6)
-
-        difficulty.invoke(difficulty.index(1))  # Default it is chosen as 1
-
-        gameMenu.add_separator()  # Adds a separator line
         gameMenu.add_command(label="Quit Game", command=self.quitGame, underline=1)
 
-    def set_mode(self, m):
-        self.mode = m
+    def set_playing_against(self, m):
+        self.playing_against = m
         print('Mode changed to:')
-        print(self.mode)
-
-    def set_first_player(self, c):
-        self.color_first_player = c
-        print('First player changed to:')
-        print(self.color_first_player)
-
-    def set_difficulty(self, d):
-        self.difficulty = d
-        print('Difficulty changed to:')
-        print(self.difficulty)
+        if self.playing_against == 0:
+            print("Human vs Human")
+        elif self.playing_against == 1:
+            print("Computer vs Human")
+        else:
+            print("Computer vs Computer")
 
     def set_heuristic(self, h):
         self.heuristic = h
@@ -169,20 +134,20 @@ class Application:
         if self.game and \
                 not messagebox.askyesno(title="New", message=message):
             return
-        if self.mode == 0:
-            p1_mode = p2_mode = "H"
-        elif self.mode == 1:
-            p1_mode = "H"
-            p2_mode = "C"
+        if self.playing_against == 0:
+            p1_playing_against = p2_playing_against = "H"
+        elif self.playing_against == 1:
+            p1_playing_against = "H"
+            p2_playing_against = "C"
         else:
-            p1_mode = "C"
-            p2_mode = "H"
+            p1_playing_against = "C"
+            p2_playing_against = "C"
         self.game = Game(p1_color=self.color_first_player,
-                         p1_mode=p1_mode, p2_mode=p2_mode)
+                         p1_playing_against=p1_playing_against, p2_playing_against=p2_playing_against)
         self.game.start()
-        if self.mode == 2:
+        if self.playing_against == 2:
             self.computer_play()
-        message = "Let's play! Now it's the %s's turn." % self.game.turn.color
+        message = "%s's turn." % self.game.turn.color
         self.update_status(message)
         self.update_board()
         self.update_score()
@@ -198,18 +163,17 @@ class Application:
         if not self.game:
             return
         self.game.change_turn()
-        if self.game.turn.mode == "C":
+        if self.game.turn.playing_against == "C":
             self.computer_play()
         if self.game:
             message = "%s's turn." % self.game.turn.color
             self.update_status(message)
             self.update_board()
 
-
     def go(self, position):
         if not self.game:
             return
-        if self.game.turn.mode == "C":
+        if self.game.turn.playing_against == "C":
             message = "It's the computer turn. Please, wait a moment."
             self.update_status(message=message)
         else:
@@ -238,9 +202,8 @@ class Application:
         print(self.game.turn.color)
         print('------------------------------')
         position = minimax.minimax(self.game.board,
-                                   self.difficulty,
-                                   self.game.turn.color,
-                                   self.heuristic)[1]
+                                   self.depth,
+                                   self.game.turn.color, minimax.INFINITUM, -minimax.INFINITUM)[1]
         print('minimax finished with choice: %s' % str(position))
         self.game.play(position)
         message = ("%s's turn." % self.game.turn.color)
@@ -259,7 +222,7 @@ class Application:
             self.show_end()
             self.game = False
             return
-        if self.game.turn.mode == "C":
+        if self.game.turn.playing_against == "C":
             if not has_valid_position(self.game.board, self.game.turn.color):
                 self.game.change_turn()
                 message = "Computer Passed. Now it's %s's turn." % \
@@ -308,10 +271,10 @@ class Application:
         """Update the scores of the players."""
         self.score["text"] = "%s(%s): %s | %s(%s): %s" % \
                              (self.game.player1.color,
-                              self.game.player1.mode,
+                              self.game.player1.playing_against,
                               self.game.player1.score,
                               self.game.player2.color,
-                              self.game.player2.mode,
+                              self.game.player2.playing_against,
                               self.game.player2.score)
         self.score.update_idletasks()
 
@@ -329,14 +292,14 @@ class Application:
 
 class Game:
 
-    def __init__(self, p1_color="W", p1_mode="H", p2_mode="C"):
+    def __init__(self, p1_color="W", p1_playing_against="H", p2_playing_against="C"):
         if p1_color == "W":
             p2_color = "B"
         else:
             p2_color = "W"
         self.board = Board()
-        self.player1 = Player(color=p1_color, mode=p1_mode)
-        self.player2 = Player(color=p2_color, mode=p2_mode)
+        self.player1 = Player(color=p1_color, playing_against=p1_playing_against)
+        self.player2 = Player(color=p2_color, playing_against=p2_playing_against)
         self.turn = self.player1
 
     def start(self):
@@ -419,15 +382,15 @@ class Board(dict):
 
 
 class Player():
-    def __init__(self, color, mode):
+    def __init__(self, color, playing_against):
         self.color = color
-        self.mode = mode
+        self.playing_against = playing_against
         self.score = 0
 
     def __str__(self):
         string = "Player:\n"
         string += "Color: %s\n" % self.color
-        string += "Mode: %s\n" % self.mode
+        string += "Mode: %s\n" % self.playing_against
         string += "Score: %s\n" % self.score
         return string
 
@@ -454,6 +417,7 @@ def has_valid_position(board, turn):
             if is_valid_position(board, position, turn):
                 return True
     return False
+
 
 
 def valid_positions(board, turn):
