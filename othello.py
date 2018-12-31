@@ -7,10 +7,10 @@ import minimax
 
 MAX = 9999
 MIN = -9999
-node_count = 0
 
 
-class Application:
+
+class Othello:
     def __init__(self):
         # Initialize the windows
         self.window = Tk()
@@ -21,7 +21,7 @@ class Application:
         # Initialize
         self.game = False
         self.show_valid_positions = 0  # Shows the valid positions that user can take.
-        self.depth = 2
+        self.depth = 1
         self.playing_against = 2
         self.color_first_player = "B"  # Always Black starts first
         self.heuristic = 2
@@ -29,6 +29,8 @@ class Application:
         self.create_elements()
         self.update_status("Welcome to the Othello game!")
         self.window.mainloop()  # Unless user exits shows the window.
+
+        #master.bind("N", self.create_game)
 
     def create_elements(self):
         self.load_images()
@@ -52,7 +54,8 @@ class Application:
         gameMenu = Menu(self.menu, tearoff=0)  # The menu will not have a tear-off feature,
         # and choices will be added starting at position 0. i.e. Creates New & Quit in another menu.
         self.menu.add_cascade(label="Game", menu=gameMenu, underline=1)  # To attach the parent menu
-        gameMenu.add_command(label="New", command=self.create_game, underline=1)
+        gameMenu.add_command(label="New", command=self.create_game, underline=1, accelerator="N")
+
         gameMenu.add_separator()  # Adds a separator line
         # Checkbox for showing valid positions
         gameMenu.add_checkbutton(label="Show valid positions to play", variable=self.show_valid_positions,
@@ -122,6 +125,7 @@ class Application:
         back = Frame(self.window)
         back.pack(fill=BOTH, expand=1)
 
+
         for row in range(8):
             frame = Frame(back)
             frame.pack(fill=BOTH, expand=1)
@@ -142,6 +146,13 @@ class Application:
         self.status.pack(side=LEFT)
 
     def create_game(self):
+
+        minimax.reset_node_count()
+
+        if minimax.node_c() == 0:
+            message = "Node count is resetted."
+            messagebox.showinfo(title="Node Count Reset", message=message)
+
         """Instantiate a game from the game module."""
         message = "Are you sure you want to restart?"
         if self.game and \
@@ -161,7 +172,7 @@ class Application:
         if self.playing_against == 2:
             self.computer_play()
         #print("xxx   " + self.game.turn.color)
-        message = "It's" + self.game.turn.color+"'s turn."
+        #message = "It's" + self.game.turn.color+"'s turn."
         self.update_status(message)
         self.update_board()
         self.update_score()
@@ -219,7 +230,7 @@ class Application:
             print('------------------------------')
             position = minimax.greedy_alpha_beta_minimax(self.game.board,
                                                          self.depth,
-                                                         self.game.turn.color, minimax.INF, -minimax.INF)[1]
+                                                         self.game.turn.color, -minimax.INF, minimax.INF)[1]
             print('Greedy approach finished with choice: %s' % str(position))
             self.game.play(position)
             message = ("%s's turn." % self.game.turn.color)
@@ -232,15 +243,15 @@ class Application:
         else:
             minimax.coinparity_alpha_beta_minimax.PLAYER = self.game.turn.color
             print('------------------------------')
-            print('Executing Greedy:')
+            print('Executing Coin-Parity:')
             print(self.game.board)
             print(self.game.turn.color)
             print('------------------------------')
             position = minimax.coinparity_alpha_beta_minimax(self.game.board,
                                                              self.depth,
-                                                             self.game.turn.color, minimax.INF,
-                                                             -minimax.INF)[1]
-            print('Greedy approach finished with choice: %s' % str(position))
+                                                             self.game.turn.color, -minimax.INF,
+                                                             minimax.INF)[1]
+            print('Coin-Parity approach finished with choice: %s' % str(position))
             self.game.play(position)
             message = ("%s's turn." % self.game.turn.color)
             self.update_status(message)
@@ -276,6 +287,21 @@ class Application:
                 self.computer_play()
 
     def show_end(self):
+        import sys
+        orig_stdout = sys.stdout
+        f = open('out.txt', 'a+')
+        sys.stdout = f
+
+        if self.heuristic == 0:
+            print("Greedy")
+        elif self.heuristic == 1:
+            print("Coin Parity")
+        print(self.game.board)
+        print("PLayer1 score: " + str(self.game.player1.score) + ",Player2 score: " + str(self.game.player2.score)+"\n\n")
+
+        sys.stdout = orig_stdout
+        f.close()
+        print("Node Count at the end: " + str(minimax.node_c()))
         message = "End of game. %s" % self.game.winning_side() + "\nTotal Nodes Visited: " + str(minimax.node_c())
         messagebox.showinfo(title="End", message=message)
 
@@ -536,4 +562,4 @@ def move(board, position, turn):
         board[item] = turn
 
 if __name__ == "__main__":
-    app = Application()
+    app = Othello()
