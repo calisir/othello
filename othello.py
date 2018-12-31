@@ -23,38 +23,38 @@ class Othello:
         self.show_valid_positions = 0  # Shows the valid positions that user can take.
         self.depth = 1
         self.playing_against = 2
-        self.color_first_player = "B"  # Always Black starts first
+        self.color_first_player = "BLACK"  # Always Black starts first
         self.heuristic = 2
 
-        self.create_elements()
-        self.update_status("Welcome to the Othello game!")
-        self.window.mainloop()  # Unless user exits shows the window.
-
-        #master.bind("N", self.create_game)
-
-    def create_elements(self):
-        self.load_images()
-        self.create_menu()
-        self.create_board()
-        self.create_details()
-
-    # Used to display icons.
-    def load_images(self):
         self.white_image = PhotoImage(file="white.gif")
         self.black_image = PhotoImage(file="black.gif")
         self.empty_image = PhotoImage(file="empty.gif")
         self.valid_image = PhotoImage(file="valid.gif")
 
-    def create_menu(self):
         self.menu = Menu(self.window)
         self.create_game_menu()
         self.window.config(menu=self.menu)
+
+
+        self.create_board()
+
+        self.pass_turn = Button(self.window, text="Pass",
+                                state=DISABLED,
+                                command=self.pass_turn)
+        self.pass_turn.pack(side=RIGHT)
+        self.status = Label(self.window)
+        self.status.pack(side=LEFT)
+
+        self.update_status("Welcome to the Othello game!")
+        self.window.mainloop()  # Unless user exits shows the window.
+
+        #master.bind("N", self.create_game)
 
     def create_game_menu(self):
         gameMenu = Menu(self.menu, tearoff=0)  # The menu will not have a tear-off feature,
         # and choices will be added starting at position 0. i.e. Creates New & Quit in another menu.
         self.menu.add_cascade(label="Game", menu=gameMenu, underline=1)  # To attach the parent menu
-        gameMenu.add_command(label="New", command=self.create_game, underline=1, accelerator="N")
+        gameMenu.add_command(label="New Game", command=self.create_game, underline=1, accelerator="N")
 
         gameMenu.add_separator()  # Adds a separator line
         # Checkbox for showing valid positions
@@ -89,7 +89,7 @@ class Othello:
         heuristic.invoke(heuristic.index("Greedy"))  # Default it is chosen as Greedy
 
         gameMenu.add_separator()  # Adds a separator line
-        gameMenu.add_command(label="Quit Game", command=self.quitGame, underline=1)
+        gameMenu.add_command(label="Quit Game", command=self.quit_game, underline=1)
 
     def set_playing_against(self, m):
         self.playing_against = m
@@ -125,7 +125,6 @@ class Othello:
         back = Frame(self.window)
         back.pack(fill=BOTH, expand=1)
 
-
         for row in range(8):
             frame = Frame(back)
             frame.pack(fill=BOTH, expand=1)
@@ -137,14 +136,6 @@ class Othello:
                 button.pack(side=LEFT, fill=BOTH, expand=1, padx=0, pady=0)
                 self.board.update({(row, column): button})
 
-    def create_details(self):
-        self.pass_turn = Button(self.window, text="Pass",
-                                state=DISABLED,
-                                command=self.pass_turn)
-        self.pass_turn.pack(side=RIGHT)
-        self.status = Label(self.window)
-        self.status.pack(side=LEFT)
-
     def create_game(self):
 
         minimax.reset_node_count()
@@ -153,22 +144,27 @@ class Othello:
             message = "Node count is resetted."
             messagebox.showinfo(title="Node Count Reset", message=message)
 
-        """Instantiate a game from the game module."""
         message = "Are you sure you want to restart?"
         if self.game and \
                 not messagebox.askyesno(title="New", message=message):
             return
+
+        # According to the settings decide the roles of each player.
         if self.playing_against == 0:
-            p1_playing_against = p2_playing_against = "H"
+            p1_playing_against = p2_playing_against = "HUMAN"
         elif self.playing_against == 1:
-            p1_playing_against = "H"
-            p2_playing_against = "C"
+            p1_playing_against = "HUMAN"
+            p2_playing_against = "COMPUTER"
         else:
-            p1_playing_against = "C"
-            p2_playing_against = "C"
+            p1_playing_against = "COMPUTER"
+            p2_playing_against = "COMPUTER"
+
+
         self.game = Game(p1_color=self.color_first_player,
                          p1_playing_against=p1_playing_against, p2_playing_against=p2_playing_against)
         self.game.start()
+
+        # If playing against computer
         if self.playing_against == 2:
             self.computer_play()
         #print("xxx   " + self.game.turn.color)
@@ -184,11 +180,10 @@ class Othello:
             self.update_board()
 
     def pass_turn(self):
-        """Pass the turn when it's not possible to play."""
         if not self.game:
             return
         self.game.change_turn()
-        if self.game.turn.playing_against == "C":
+        if self.game.turn.playing_against == "COMPUTER":
             self.computer_play()
         if self.game:
             message = "%s's turn." % self.game.turn.color
@@ -198,20 +193,19 @@ class Othello:
     def go(self, position):
         if not self.game:
             return
-        if self.game.turn.playing_against == "C":
-            message = "It's the computer turn. Please, wait a moment."
+        if self.game.turn.playing_against == "COMPUTER":
+            message = "It's the computer turn."
             self.update_status(message=message)
         else:
             self.play(position)
 
     def play(self, position):
-        """Move a piece to the given position."""
         valid = self.game.play(position)
         if not valid:
             message = "Invalid move. It's %s's turn." % self.game.turn.color
             self.update_status(message)
         else:
-            message = "%s's turn." % (self.game.turn.color)
+            message = "%s's turn." % self.game.turn.color
             self.update_status(message)
             self.update_board()
             self.update_score()
@@ -219,7 +213,6 @@ class Othello:
             self.check_next_turn()
 
     def computer_play(self):
-
         # Playing Greedy
         if self.heuristic == 0:
             minimax.greedy_alpha_beta_minimax.PLAYER = self.game.turn.color
@@ -260,29 +253,26 @@ class Othello:
             self.update_pass_turn()
             self.check_next_turn()
 
-
-
     def check_next_turn(self):
-        if self.game.test_end():
-            self.update_status("End of game.")
+        if self.game.is_end():
+            self.update_status("End of the game.")
             self.update_board()
             self.update_score()
             self.update_pass_turn()
             self.show_end()
             self.game = False
             return
-        if self.game.turn.playing_against == "C":
+        if self.game.turn.playing_against == "COMPUTER":
             if not has_valid_position(self.game.board, self.game.turn.color):
                 self.game.change_turn()
-                message = "Computer Passed. Now it's %s's turn." % \
-                          (self.game.turn.color)
+                message = "Computer passed its turn. Now it's %s's turn." % \
+                          self.game.turn.color
                 self.update_status(message)
                 self.update_board()
                 self.update_pass_turn()
                 return
             else:
-                # computer always has a movement to do
-                self.update_status("Computer is 'thinking'. Please, wait a moment...")
+                self.update_status("Computers Turn")
                 self.update_board()
                 self.computer_play()
 
@@ -297,12 +287,13 @@ class Othello:
         elif self.heuristic == 1:
             print("Coin Parity")
         print(self.game.board)
-        print("PLayer1 score: " + str(self.game.player1.score) + ",Player2 score: " + str(self.game.player2.score)+"\n\n")
+        print("PLayer1 score: " + str(self.game.player1.score) + ",Player2 score: " + str(self.game.player2.score))
+        print("Total Nodes Visited: "+str(minimax.node_c())+"\n\n")
 
         sys.stdout = orig_stdout
         f.close()
         print("Node Count at the end: " + str(minimax.node_c()))
-        message = "End of game. %s" % self.game.winning_side() + "\nTotal Nodes Visited: " + str(minimax.node_c())
+        message = "End of game. %s" % self.game.show_winner() + "\nTotal Nodes Visited: " + str(minimax.node_c())
         messagebox.showinfo(title="End", message=message)
 
     def update_status(self, message):
@@ -310,15 +301,14 @@ class Othello:
         self.window.update_idletasks()
 
     def update_board(self):
-        """Update the pieces from the game's board."""
         for row in range(8):
             for column in range(8):
                 position = self.board[(row, column)]
                 position["state"] = NORMAL
-                if self.game.board[(row, column)] == "W":
+                if self.game.board[(row, column)] == "WHITE":
                     position["image"] = self.white_image
                     position.update_idletasks()
-                elif self.game.board[(row, column)] == "B":
+                elif self.game.board[(row, column)] == "BLACK":
                     position["image"] = self.black_image
                     position.update_idletasks()
                 else:
@@ -332,7 +322,6 @@ class Othello:
                 p.update_idletasks()
 
     def update_score(self):
-        """Update the scores of the players."""
         self.score["text"] = "%s(%s): %s | %s(%s): %s" % \
                              (self.game.player1.color,
                               self.game.player1.playing_against,
@@ -343,32 +332,30 @@ class Othello:
         self.score.update_idletasks()
 
     def update_pass_turn(self):
-        """Check if it's a pass situation and enable the Pass button."""
         self.pass_turn["state"] = DISABLED
         if not has_valid_position(self.game.board, self.game.turn.color):
             self.pass_turn["state"] = NORMAL
             self.pass_turn.update_idletasks()
 
-    def quitGame(self):
-        if messagebox.askyesno(title="Quit", message="Really quit?"):
+    def quit_game(self):
+        if messagebox.askyesno(title="Quit", message="Are you sure you want to quit game ?"):
             quit()
 
 
 class Game:
-
-    def __init__(self, p1_color="W", p1_playing_against="H", p2_playing_against="C"):
-        if p1_color == "W":
-            p2_color = "B"
+    def __init__(self, p1_color="WHITE", p1_playing_against="HUMAN", p2_playing_against="COMPUTER"):
+        if p1_color == "WHITE":
+            p2_color = "BLACK"
         else:
-            p2_color = "W"
+            p2_color = "WHITE"
         self.board = Board()
         self.player1 = Player(color=p1_color, playing_against=p1_playing_against)
         self.player2 = Player(color=p2_color, playing_against=p2_playing_against)
         self.turn = self.player1
 
     def start(self):
-        self.board[(3, 3)] = self.board[(4, 4)] = "B"
-        self.board[(3, 4)] = self.board[(4, 3)] = "W"
+        self.board[(3, 3)] = self.board[(4, 4)] = "BLACK"
+        self.board[(3, 4)] = self.board[(4, 3)] = "WHITE"
         self.update_scores()
 
     def play(self, position):
@@ -390,7 +377,7 @@ class Game:
         else:
             self.turn = self.player1
 
-    def winning_side(self, formatted=True):
+    def show_winner(self, formatted=True):
         self.update_scores()
         if self.player1.score > self.player2.score:
             winning = self.player1.color
@@ -401,43 +388,27 @@ class Game:
         else:
             if not formatted: return None
             return "Tie."
-        if winning == "W":
+        if winning == "WHITE":
             return "White win!"
         else:
             return "Black win!"
 
-    def test_end(self):
+    def is_end(self):
         return end_game(self.board)
-
-    def __str__(self):
-        string = "----------------------\n"
-        string += "GAME\n"
-        string += "-------\n"
-        string += "Turn: %s\n" % self.turn.color
-        string += "-------\n"
-        string += self.player1.__str__()
-        string += "-------\n"
-        string += self.player2.__str__()
-        string += "-------\n"
-        string += "Board:\n"
-        string += self.board.__str__()
-        string += "----------------------\n"
-        return string
-
 
 
 class Board(dict):
     def __init__(self):
         for i in range(8):
             for j in range(8):
-                self[(i, j)] = "E"
+                self[(i, j)] = "EMPTY"
 
     def __str__(self):
         string = ""
         for i in range(8):
             a = ""
             for j in range(8):
-                if self[(i, j)] == "E":
+                if self[(i, j)] == "EMPTY":
                     a += '-'
                 else:
                     a += self[(i, j)]
@@ -451,30 +422,21 @@ class Player():
         self.playing_against = playing_against
         self.score = 0
 
-    def __str__(self):
-        string = "Player:\n"
-        string += "Color: %s\n" % self.color
-        string += "Mode: %s\n" % self.playing_against
-        string += "Score: %s\n" % self.score
-        return string
-
 
 directions = [(1, 0), (0, 1), (-1, 0), (0, -1),
               (1, 1), (1, -1), (-1, 1), (-1, -1)]
 
 
 def count_pieces(board, color):
-    """Count the pieces in the board of the given color."""
-    sum = 0
+    count = 0
     for i in range(8):
         for j in range(8):
             if board[(i, j)] == color:
-                sum += 1
-    return sum
+                count += 1
+    return count
 
 
 def has_valid_position(board, turn):
-    """Return if the turn has any valid position."""
     for i in range(8):
         for j in range(8):
             position = (i, j)
@@ -483,9 +445,7 @@ def has_valid_position(board, turn):
     return False
 
 
-
 def valid_positions(board, turn):
-    """Return a set with all valid positions for the given turn."""
     valid = list()
     for i in range(8):
         for j in range(8):
@@ -497,20 +457,12 @@ def valid_positions(board, turn):
 
 
 def end_game(board):
-    """Return a bool.
-    Check the end of the game.
-
-    """
-    return not has_valid_position(board, "W") and not \
-        has_valid_position(board, "B")
+    return not has_valid_position(board, "WHITE") and not \
+        has_valid_position(board, "BLACK")
 
 
 def is_valid_position(board, position, turn):
-    """Return a bool.
-    Check if the given position is valid for this turn.
-
-    """
-    if board[position] != "E":
+    if board[position] != "EMPTY":
         return False
     for direction in directions:
         between = 0
@@ -519,7 +471,7 @@ def is_valid_position(board, position, turn):
             try:
                 i += direction[0]
                 j += direction[1]
-                if board[(i, j)] == "E":
+                if board[(i, j)] == "EMPTY":
                     break
                 if board[(i, j)] != turn:
                     between += 1
@@ -533,8 +485,6 @@ def is_valid_position(board, position, turn):
 
 
 def move(board, position, turn):
-    """Move to the given position a piece of the color of the turn."""
-
     to_change = []
     for direction in directions:
         between = 0
@@ -543,7 +493,7 @@ def move(board, position, turn):
             try:
                 i += direction[0]
                 j += direction[1]
-                if board[(i, j)] == "E":
+                if board[(i, j)] == "EMPTY":
                     break
                 if board[(i, j)] != turn:
                     between += 1

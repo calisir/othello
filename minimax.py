@@ -2,16 +2,16 @@ from copy import copy
 from othello import *
 
 
-PLAYER = "W"
+PLAYER = "WHITE"
 INF = 9999999999999999
 node_count = 0
 
 
 def change_turn(turn):
-    if turn == "W":
-        return "B"
+    if turn == "WHITE":
+        return "BLACK"
     else:
-        return "W"
+        return "WHITE"
 
 
 def node_c():
@@ -206,20 +206,20 @@ def coinparity_alpha_beta_minimax(board, depth, turn, alpha, beta):
 
 def greedy(board, turn):
     if turn == "W":
-        print("GREEDY-W-COUNT "+str(count_pieces(board, "W")))
-        return count_pieces(board, "W")
+        print("GREEDY-W-COUNT "+str(count_pieces(board, "WHITE")))
+        return count_pieces(board, "WHITE")
     else:
-        print("GREEDY-B-COUNT " + str(count_pieces(board, "B")))
-        return count_pieces(board, "B")
+        print("GREEDY-B-COUNT " + str(count_pieces(board, "BLACK")))
+        return count_pieces(board, "BLACK")
 
 
 def coin_parity(board, turn):
     if turn == PLAYER:
-        max_player = "W"
-        min_player = "B"
+        max_player = "WHITE"
+        min_player = "BLACK"
     else:
-        max_player = "B"
-        min_player = "W"
+        max_player = "BLACK"
+        min_player = "WHITE"
 
     print("1: "+str(count_pieces(board, max_player)))
     print("2: "+str(count_pieces(board, min_player)))
