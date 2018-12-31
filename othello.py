@@ -7,13 +7,14 @@ import minimax
 
 MAX = 9999
 MIN = -9999
+node_count = 0
 
 
 class Application:
     def __init__(self):
         # Initialize the windows
         self.window = Tk()
-        self.window.title("Othello game")
+        self.window.title("Othello")
         self.window.wm_maxsize(width="490", height="540")
         self.window.wm_minsize(width="490", height="540")
 
@@ -23,10 +24,10 @@ class Application:
         self.depth = 2
         self.playing_against = 2
         self.color_first_player = "B"  # Always Black starts first
-        self.heuristic = 4
+        self.heuristic = 2
 
         self.create_elements()
-        self.update_status("Welcome to Othello game!")
+        self.update_status("Welcome to the Othello game!")
         self.window.mainloop()  # Unless user exits shows the window.
 
     def create_elements(self):
@@ -75,11 +76,11 @@ class Application:
         heuristic = Menu(gameMenu, tearoff=0)
         gameMenu.add_cascade(label="Heuristic", menu=heuristic, underline=0)
         heuristic.add_radiobutton(label="Greedy", variable=self.heuristic, underline=0,
-                                  command=lambda: self.set_heuristic(minimax.greedy),
+                                  command=lambda: self.set_heuristic(0),
                                   value=0)
 
         heuristic.add_radiobutton(label="Coin-Parity", variable=self.heuristic, underline=0,
-                                  command=lambda: self.set_heuristic(minimax.coin_parity),
+                                  command=lambda: self.set_heuristic(1),
                                   value=1)
 
         heuristic.invoke(heuristic.index("Greedy"))  # Default it is chosen as Greedy
@@ -89,7 +90,7 @@ class Application:
 
     def set_playing_against(self, m):
         self.playing_against = m
-        print('Mode changed to:')
+        print('Playings against is set to:')
         if self.playing_against == 0:
             print("Human vs Human")
         elif self.playing_against == 1:
@@ -97,10 +98,22 @@ class Application:
         else:
             print("Computer vs Computer")
 
+        # Set Visited Nodes to 0 for every new game
+        global node_count
+        node_count = 0
+
     def set_heuristic(self, h):
+        #print("h: "+str(h))
         self.heuristic = h
-        print('Heuristic changed to:')
-        print(self.heuristic)
+        print('Heuristic set to:')
+        if self.heuristic == 0:
+            print("Greedy")
+        elif self.heuristic == 1:
+            print("Coin Parity")
+
+        # Set Visited Nodes to 0 for every new game
+        global node_count
+        node_count = 0
 
     def create_board(self):
         self.score = Label(self.window)
@@ -147,7 +160,8 @@ class Application:
         self.game.start()
         if self.playing_against == 2:
             self.computer_play()
-        message = "%s's turn." % self.game.turn.color
+        #print("xxx   " + self.game.turn.color)
+        message = "It's" + self.game.turn.color+"'s turn."
         self.update_status(message)
         self.update_board()
         self.update_score()
@@ -195,23 +209,47 @@ class Application:
 
     def computer_play(self):
 
-        minimax.PLAYER = self.game.turn.color
-        print('------------------------------')
-        print('executing minimax with:')
-        print(self.game.board)
-        print(self.game.turn.color)
-        print('------------------------------')
-        position = minimax.minimax(self.game.board,
-                                   self.depth,
-                                   self.game.turn.color, minimax.INFINITUM, -minimax.INFINITUM)[1]
-        print('minimax finished with choice: %s' % str(position))
-        self.game.play(position)
-        message = ("%s's turn." % self.game.turn.color)
-        self.update_status(message)
-        self.update_board()
-        self.update_score()
-        self.update_pass_turn()
-        self.check_next_turn()
+        # Playing Greedy
+        if self.heuristic == 0:
+            minimax.greedy_alpha_beta_minimax.PLAYER = self.game.turn.color
+            print('------------------------------')
+            print('Executing Greedy:')
+            print(self.game.board)
+            print(self.game.turn.color)
+            print('------------------------------')
+            position = minimax.greedy_alpha_beta_minimax(self.game.board,
+                                                         self.depth,
+                                                         self.game.turn.color, minimax.INF, -minimax.INF)[1]
+            print('Greedy approach finished with choice: %s' % str(position))
+            self.game.play(position)
+            message = ("%s's turn." % self.game.turn.color)
+            self.update_status(message)
+            self.update_board()
+            self.update_score()
+            self.update_pass_turn()
+            self.check_next_turn()
+        # Playing Coin-Parity
+        else:
+            minimax.coinparity_alpha_beta_minimax.PLAYER = self.game.turn.color
+            print('------------------------------')
+            print('Executing Greedy:')
+            print(self.game.board)
+            print(self.game.turn.color)
+            print('------------------------------')
+            position = minimax.coinparity_alpha_beta_minimax(self.game.board,
+                                                             self.depth,
+                                                             self.game.turn.color, minimax.INF,
+                                                             -minimax.INF)[1]
+            print('Greedy approach finished with choice: %s' % str(position))
+            self.game.play(position)
+            message = ("%s's turn." % self.game.turn.color)
+            self.update_status(message)
+            self.update_board()
+            self.update_score()
+            self.update_pass_turn()
+            self.check_next_turn()
+
+
 
     def check_next_turn(self):
         if self.game.test_end():
@@ -238,7 +276,7 @@ class Application:
                 self.computer_play()
 
     def show_end(self):
-        message = "End of game. %s" % self.game.winning_side()
+        message = "End of game. %s" % self.game.winning_side() + "\nTotal Nodes Visited: " + str(minimax.node_c())
         messagebox.showinfo(title="End", message=message)
 
     def update_status(self, message):
