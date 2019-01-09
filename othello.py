@@ -4,10 +4,13 @@ from tkinter import messagebox
 import random
 
 import minimax
+import driver
 
 MAX = 9999
 MIN = -9999
 
+directions = [(1, 0), (0, 1), (-1, 0), (0, -1),
+              (1, 1), (1, -1), (-1, 1), (-1, -1)]
 
 
 class Othello:
@@ -15,15 +18,15 @@ class Othello:
         # Initialize the windows
         self.window = Tk()
         self.window.title("Othello")
-        self.window.wm_maxsize(width="490", height="540")
-        self.window.wm_minsize(width="490", height="540")
+        self.window.wm_maxsize(width="490", height="600")
+        self.window.wm_minsize(width="490", height="600")
 
         # Initialize
         self.game = False
         self.show_valid_positions = 0  # Shows the valid positions that user can take.
         self.depth = 1
         self.playing_against = 2
-        self.color_first_player = "BLACK"  # Always Black starts first
+        self.color_first_player = "B"  # Always Black starts first
         self.heuristic = 2
 
         self.white_image = PhotoImage(file="white.gif")
@@ -192,12 +195,17 @@ class Othello:
 
     def go(self, position):
         if not self.game:
+            #print("XXXXXXX")
+            self.update_pass_turn()
             return
         if self.game.turn.playing_against == "COMPUTER":
             message = "It's the computer turn."
             self.update_status(message=message)
+            #print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+            self.play(position)
         else:
             self.play(position)
+            self.update_pass_turn()
 
     def play(self, position):
         valid = self.game.play(position)
@@ -232,6 +240,7 @@ class Othello:
             self.update_score()
             self.update_pass_turn()
             self.check_next_turn()
+            self.update_pass_turn()
         # Playing Coin-Parity
         else:
             minimax.coinparity_alpha_beta_minimax.PLAYER = self.game.turn.color
@@ -263,8 +272,7 @@ class Othello:
             self.game = False
             return
         if self.game.turn.playing_against == "COMPUTER":
-            if not has_valid_position(self.game.board, self.game.turn.color):
-                self.game.change_turn()
+            if not driver.has_valid_position(self.game.board, self.game.turn.color):
                 message = "Computer passed its turn. Now it's %s's turn." % \
                           self.game.turn.color
                 self.update_status(message)
@@ -305,17 +313,18 @@ class Othello:
             for column in range(8):
                 position = self.board[(row, column)]
                 position["state"] = NORMAL
-                if self.game.board[(row, column)] == "WHITE":
+                #print("xxx : "+str(self.game.board[(row, column)]))
+                if str(self.game.board[(row, column)]) is "W":
                     position["image"] = self.white_image
                     position.update_idletasks()
-                elif self.game.board[(row, column)] == "BLACK":
+                elif str(self.game.board[(row, column)]) is "B":
                     position["image"] = self.black_image
                     position.update_idletasks()
                 else:
                     position["image"] = self.empty_image
                     position.update_idletasks()
         if self.show_valid_positions:
-            valid = list(valid_positions(self.game.board, self.game.turn.color))
+            valid = list(driver.valid_positions(self.game.board, self.game.turn.color))
             for position in valid:
                 p = self.board[position]
                 p["image"] = self.valid_image
@@ -333,68 +342,13 @@ class Othello:
 
     def update_pass_turn(self):
         self.pass_turn["state"] = DISABLED
-        if not has_valid_position(self.game.board, self.game.turn.color):
+        if not driver.has_valid_position(self.game.board, self.game.turn.color):
             self.pass_turn["state"] = NORMAL
             self.pass_turn.update_idletasks()
 
     def quit_game(self):
         if messagebox.askyesno(title="Quit", message="Are you sure you want to quit game ?"):
             quit()
-
-
-class Game:
-    def __init__(self, p1_color="WHITE", p1_playing_against="HUMAN", p2_playing_against="COMPUTER"):
-        if p1_color == "WHITE":
-            p2_color = "BLACK"
-        else:
-            p2_color = "WHITE"
-        self.board = Board()
-        self.player1 = Player(color=p1_color, playing_against=p1_playing_against)
-        self.player2 = Player(color=p2_color, playing_against=p2_playing_against)
-        self.turn = self.player1
-
-    def start(self):
-        self.board[(3, 3)] = self.board[(4, 4)] = "BLACK"
-        self.board[(3, 4)] = self.board[(4, 3)] = "WHITE"
-        self.update_scores()
-
-    def play(self, position):
-        if is_valid_position(self.board, position, self.turn.color):
-            move(self.board, position, self.turn.color)
-            self.update_scores()
-            self.change_turn()
-            return True
-        else:
-            return False
-
-    def update_scores(self):
-        self.player1.score = count_pieces(self.board, self.player1.color)
-        self.player2.score = count_pieces(self.board, self.player2.color)
-
-    def change_turn(self):
-        if self.turn == self.player1:
-            self.turn = self.player2
-        else:
-            self.turn = self.player1
-
-    def show_winner(self, formatted=True):
-        self.update_scores()
-        if self.player1.score > self.player2.score:
-            winning = self.player1.color
-            if not formatted: return winning
-        elif self.player1.score < self.player2.score:
-            winning = self.player2.color
-            if not formatted: return winning
-        else:
-            if not formatted: return None
-            return "Tie."
-        if winning == "WHITE":
-            return "White win!"
-        else:
-            return "Black win!"
-
-    def is_end(self):
-        return end_game(self.board)
 
 
 class Board(dict):
@@ -414,74 +368,6 @@ class Board(dict):
                     a += self[(i, j)]
             string += a + '\n'
         return string
-
-
-class Player():
-    def __init__(self, color, playing_against):
-        self.color = color
-        self.playing_against = playing_against
-        self.score = 0
-
-
-directions = [(1, 0), (0, 1), (-1, 0), (0, -1),
-              (1, 1), (1, -1), (-1, 1), (-1, -1)]
-
-
-def count_pieces(board, color):
-    count = 0
-    for i in range(8):
-        for j in range(8):
-            if board[(i, j)] == color:
-                count += 1
-    return count
-
-
-def has_valid_position(board, turn):
-    for i in range(8):
-        for j in range(8):
-            position = (i, j)
-            if is_valid_position(board, position, turn):
-                return True
-    return False
-
-
-def valid_positions(board, turn):
-    valid = list()
-    for i in range(8):
-        for j in range(8):
-            position = (i, j)
-            if is_valid_position(board, position, turn):
-                valid.append(position)
-
-    return set(valid)
-
-
-def end_game(board):
-    return not has_valid_position(board, "WHITE") and not \
-        has_valid_position(board, "BLACK")
-
-
-def is_valid_position(board, position, turn):
-    if board[position] != "EMPTY":
-        return False
-    for direction in directions:
-        between = 0
-        i, j = position
-        while True:
-            try:
-                i += direction[0]
-                j += direction[1]
-                if board[(i, j)] == "EMPTY":
-                    break
-                if board[(i, j)] != turn:
-                    between += 1
-                elif between > 0:
-                    return True
-                else:
-                    break
-            except KeyError:
-                break
-    return False
 
 
 def move(board, position, turn):
@@ -510,6 +396,68 @@ def move(board, position, turn):
                 break
     for item in to_change:
         board[item] = turn
+
+
+class Game():
+    def __init__(self, p1_color="W", p1_playing_against="HUMAN", p2_playing_against="COMPUTER"):
+        if p1_color == "W":
+            p2_color = "B"
+        else:
+            p2_color = "W"
+        self.board = Board()
+        self.player1 = Player(color=p1_color, playing_against=p1_playing_against)
+        self.player2 = Player(color=p2_color, playing_against=p2_playing_against)
+        self.turn = self.player1
+
+    def start(self):
+        self.board[(3, 3)] = self.board[(4, 4)] = "B"
+        self.board[(3, 4)] = self.board[(4, 3)] = "W"
+        self.update_scores()
+
+    def play(self, position):
+        if driver.is_valid_position(self.board, position, self.turn.color):
+            move(self.board, position, self.turn.color)
+            self.update_scores()
+            self.change_turn()
+            return True
+        else:
+            return False
+
+    def update_scores(self):
+        self.player1.score = driver.count_pieces(self.board, self.player1.color)
+        self.player2.score = driver.count_pieces(self.board, self.player2.color)
+
+    def change_turn(self):
+        if self.turn == self.player1:
+            self.turn = self.player2
+        else:
+            self.turn = self.player1
+
+    def show_winner(self, formatted=True):
+        self.update_scores()
+        if self.player1.score > self.player2.score:
+            winning = self.player1.color
+            if not formatted: return winning
+        elif self.player1.score < self.player2.score:
+            winning = self.player2.color
+            if not formatted: return winning
+        else:
+            if not formatted: return None
+            return "Tie."
+        if winning == "W":
+            return "White win!"
+        else:
+            return "Black win!"
+
+    def is_end(self):
+        return driver.end_game(self.board)
+
+
+class Player():
+    def __init__(self, color, playing_against):
+        self.color = color
+        self.playing_against = playing_against
+        self.score = 0
 
 if __name__ == "__main__":
     app = Othello()
